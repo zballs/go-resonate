@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"github.com/jbenet/go-base58"
+	"io"
 )
 
 // Base64
@@ -33,8 +34,19 @@ func BytesFromHex(hexstr string) []byte {
 }
 
 // JSON
-func JSON(v interface{}) []byte {
+func ToJSON(v interface{}) []byte {
 	data, err := json.Marshal(v)
 	Check(err)
 	return data
+}
+
+func FromJSON(data []byte, v interface{}) {
+	err := json.Unmarshal(data, v)
+	Check(err)
+}
+
+func ReadJSON(r io.Reader, v interface{}) {
+	enc := json.NewDecoder(r)
+	err := enc.Decode(v)
+	Check(err)
 }

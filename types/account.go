@@ -5,7 +5,7 @@ import . "github.com/zballs/go_resonate/util"
 // Basic Account type
 
 type Account struct {
-	PubKey   *PublicKey `json:"pub_key"`
+	PubKey   *PublicKey `json:"public_key"`
 	Sequence int        `json:"sequence"`
 }
 
@@ -24,9 +24,11 @@ func (acc *Account) Address() []byte {
 	return acc.PubKey.Address()
 }
 
+// Private Account
+
 type PrivateAccount struct {
 	*Account
-	PrivKey *PrivateKey
+	Key *PrivateKey
 }
 
 func NewPrivateAccount(acc *Account, key *PrivateKey) *PrivateAccount {

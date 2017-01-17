@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	. "github.com/tendermint/go-common"
 	merk "github.com/tendermint/merkleeyes/client"
 	"github.com/tendermint/tmsp/server"
+	"github.com/zballs/go_resonate/api"
 	"github.com/zballs/go_resonate/app"
-	"github.com/zballs/go_resonate/manager"
 	. "github.com/zballs/go_resonate/util"
 	"net/http"
 	"reflect"
@@ -35,7 +34,7 @@ func main() {
 		kvz := loadGenesis(*genFilePath)
 		for _, kv := range kvz {
 			log := go_resonateApp.SetOption(kv.Key, kv.Value)
-			fmt.Println(Fmt("Set: %v=%v. Log: %v", kv.Key, kv.Value, log))
+			fmt.Printf("Set: %v=%v. Log: %v", kv.Key, kv.Value, log)
 		}
 	}
 
@@ -45,21 +44,18 @@ func main() {
 		Exit("abci server: " + err.Error())
 	}
 
-	//-----	TODO: -----//
-
-	RegisterTemplates()
-	CreatePages()
+	RegisterTemplates("base.html", "home.html")
+	CreatePages("base", "home")
 
 	// Create request multiplexer
 	mux := http.NewServeMux()
-	mux.HandleFunc(, TemplateHandler())
-	mux.HandleFunc(, TemplateHandler())
+	mux.HandleFunc("/home", TemplateHandler("home.html"))
 
 	// Create resonate api
-	m := manager.CreateManager(*rpcPtr)
+	api := api.NewApi(*rpcPtr)
 
 	// Add routes to multiplexer
-	m.AddRoutes(mux)
+	api.AddRoutes(mux)
 
 	// File server
 	js := JustFiles{http.Dir("static/")}

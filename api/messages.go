@@ -32,20 +32,15 @@ type Message struct {
 }
 
 type Keypair struct {
-	Encoding string `json:"encoding"`
-	Privkey  string `json:"priv_key"`
-	Pubkey   string `json:"pub_key"`
+	Privkey *PrivateKey `json:"private_key"`
+	Pubkey  *PublicKey  `json:"public_key"`
 }
 
 func NewKeypairB58(pub *PublicKey, priv *PrivateKey) *Keypair {
-	return &Keypair{"b58", priv.ToB58(), pub.ToB58()}
+	return &Keypair{priv, pub}
 }
 
-func NewKeypairHex(pub *PublicKey, priv *PrivateKey) *Keypair {
-	return &Keypair{"hex", priv.ToHex(), pub.ToHex()}
-}
-
-func MessageCreateAccount(data *Keypair, err error) *Message {
+func MessageCreateUser(data *Keypair, err error) *Message {
 	return &Message{
 		Action: "create_account",
 		Data:   data,
@@ -53,7 +48,7 @@ func MessageCreateAccount(data *Keypair, err error) *Message {
 	}
 }
 
-func MessageRemoveAccount(err error) *Message {
+func MessageRemoveUser(err error) *Message {
 	return &Message{
 		Action: "remove_account",
 		Error:  err,

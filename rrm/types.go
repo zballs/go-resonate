@@ -10,8 +10,6 @@ const (
 	COALAIP = "<coalaip placeholder>"
 )
 
-type uri string
-
 // json-ld types for the coalaip rrm
 // specs: github.com/COALAIP/specs/data-structure/README.md
 // TODO: ipld
@@ -58,15 +56,13 @@ func PlaceData(lat, long, name string) []byte {
 
 // Person
 
-func PersonData(id uri, givenName, familyName, birthDate, deathDate string) []byte {
+func PersonData(id, givenName, familyName, birthDate, deathDate string) []byte {
 	data, _ := json.Marshal(struct {
-		Context    string `json: "@context"`
-		Type       string `json:"@type"`
-		Id         uri    `json:"@id"`
-		GivenName  string `json:"givenName"`
-		FamilyName string `json:"familyName"`
-		BirthDate  string `json:"birthDate"`
-		DeathDate  string `json:"deathDate"`
+		Context   string `json: "@context"`
+		Type      string `json:"@type"`
+		Id        string `json:"@id"`
+		Email     string `json:"email"`
+		BirthDate string `json:"birthDate"`
 	}{
 		Context:    SCHEMA,
 		Type:       "Person",
@@ -81,14 +77,14 @@ func PersonData(id uri, givenName, familyName, birthDate, deathDate string) []by
 
 // Organization
 
-func OrganizationData(id uri, name string, founder uri, members []uri) []byte {
+func OrganizationData(id, name string, founder string, members []string) []byte {
 	data, _ := json.Marshal(struct {
-		Context string `json:"@context"`
-		Type    string `json:"@type"`
-		Id      uri    `json:"@id"`
-		Name    string `json:"name"`
-		Founder uri    `json:"founder"`
-		Member  []uri  `json:"member"`
+		Context string   `json:"@context"`
+		Type    string   `json:"@type"`
+		Id      string   `json:"@id"`
+		Name    string   `json:"name"`
+		Founder string   `json:"founder"`
+		Member  []string `json:"member"`
 	}{
 		Context: SCHEMA,
 		Type:    "Organization",
@@ -100,15 +96,17 @@ func OrganizationData(id uri, name string, founder uri, members []uri) []byte {
 	return data
 }
 
+//---------------------------------------------------
+
 // Creation
 
-func WorkData(id uri, name string, author uri) []byte {
+func WorkData(id, name, author string) []byte {
 	data, _ := json.Marshal(struct {
 		Context string `json:"@context"`
 		Type    string `json:"@type"`
-		Id      uri    `json:"@id"`
+		Id      string `json:"@id"`
 		Name    string `json:"name"`
-		Author  uri    `json:"author"`
+		Author  string `json:"author"`
 	}{
 		Context: COALAIP,
 		Type:    "Work",
@@ -121,18 +119,18 @@ func WorkData(id uri, name string, author uri) []byte {
 
 // Digital manifestation
 
-func DigitalManifestationData(id uri, name string, example uri, isManifestation bool, project uri, datePublished string, locationCreated, url uri) []byte {
+func DigitalManifestationData(id string, name string, example string, isManifestation bool, project string, datePublished string, locationCreated, url string) []byte {
 	data, _ := json.Marshal(struct {
 		Context         string `json:"@context"`
 		Type            string `json:"@type"`
-		Id              uri    `json:"@id"`
+		Id              string `json:"@id"`
 		Name            string `json:"name"`
-		ExampleOfWork   uri    `json:"exampleOfWork"`
+		ExampleOfWork   string `json:"exampleOfWork"`
 		IsManifestation bool   `json:"isManifestation"`
-		IsPartOf        uri    `json:"isPartOf"`
+		IsPartOf        string `json:"isPartOf"`
 		DatePublished   string `json:"datePublished"`
-		LocationCreated uri    `json:"locationCreated"`
-		Url             uri    `json:"url"`
+		LocationCreated string `json:"locationCreated"`
+		Url             string `json:"url"`
 	}{
 		Context:         COALAIP,
 		Type:            "Manifestation",
@@ -150,12 +148,12 @@ func DigitalManifestationData(id uri, name string, example uri, isManifestation 
 
 // Digital Fingerprint
 
-func digitalFingerprint(id, creativeWork uri, fingerprint string) []byte {
+func digitalFingerprint(id, creativeWork string, fingerprint string) []byte {
 	data, _ := json.Marshal(struct {
 		Context       string `json:"@context"`
 		Type          string `json:"@type"`
-		Id            uri    `json:"@id"`
-		FingerprintOf uri    `json:"fingerprintOf"`
+		Id            string `json:"@id"`
+		FingerprintOf string `json:"fingerprintOf"`
 		Fingerprint   string `json:"fingerprint"`
 	}{
 		Context:       COALAIP,
@@ -169,21 +167,21 @@ func digitalFingerprint(id, creativeWork uri, fingerprint string) []byte {
 
 // Right
 
-func RightData(id uri, usages []string, territory uri, rightContext []string, exclusive bool, numberOfUses, percentageShares int, validFrom, validTo string, creativeWork, license uri) []byte {
+func RightData(id string, usages []string, territory string, rightContext []string, exclusive bool, numberOfUses, percentageShares int, validFrom, validTo string, creativeWork, license string) []byte {
 	data, _ := json.Marshal(struct {
 		Context          string   `json:"@context"`
 		Type             string   `json:"@type"`
-		Id               uri      `json:"@id"`
+		Id               string   `json:"@id"`
 		Usages           []string `json:"usages"`
-		Territory        uri      `json:"territory"`
+		Territory        string   `json:"territory"`
 		RightContext     []string `json:"rightContext"`
 		Exclusive        bool     `json:"exclusive"`
 		NumberOfUses     int      `json:"numberOfUses"`
 		PercentageShares int      `json:"share"`
 		ValidFrom        string   `json:"validFrom"`
 		ValidTo          string   `json:"validTo"`
-		Creation         uri      `json:"creation"`
-		License          uri      `json:"license"`
+		Creation         string   `json:"creation"`
+		License          string   `json:"license"`
 	}{
 		Context:          COALAIP,
 		Type:             "Right",
@@ -204,12 +202,12 @@ func RightData(id uri, usages []string, territory uri, rightContext []string, ex
 
 // Rights assignment
 
-func RightsAssignmentData(id, creativeWork uri) []byte {
+func RightsAssignmentData(id, creativeWork string) []byte {
 	data, _ := json.Marshal(struct {
 		Context          string `json:"@context"`
 		Type             string `json:"@type"`
-		Id               uri    `json:"@id"`
-		TransferContract uri    `json:"transferContract"`
+		Id               string `json:"@id"`
+		TransferContract string `json:"transferContract"`
 	}{
 		Context:          COALAIP,
 		Type:             "RightsTransferAction",
@@ -221,14 +219,14 @@ func RightsAssignmentData(id, creativeWork uri) []byte {
 
 // Rights assertion
 
-func RightsAssertionData(id, asserter uri, assertionTruth bool, assertionSubject uri, _error, validFrom, validThrough string) []byte {
+func RightsAssertionData(id, asserter string, assertionTruth bool, assertionSubject string, _error, validFrom, validThrough string) []byte {
 	data, _ := json.Marshal(struct {
 		Context          string `json:"@context"`
 		Type             string `json:"@type"`
-		Id               uri    `json:"@id"`
-		Asserter         uri    `json:"asserter"`
+		Id               string `json:"@id"`
+		Asserter         string `json:"asserter"`
 		AssertionTruth   bool   `json:"assertionTruth"`
-		AssertionSubject uri    `json:"assertionSubject"`
+		AssertionSubject string `json:"assertionSubject"`
 		Error            string `json:"error"`
 		ValidFrom        string `json:"validFrom"`
 		ValidThrough     string `json:"validThrough"`

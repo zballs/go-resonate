@@ -9,9 +9,8 @@ import (
 )
 
 const (
-	CREATE_ACCOUNT = 0x01
-	REMOVE_ACCOUNT = 0x02
-	UPLOAD         = 0x03
+	CREATE_USER = 0x01
+	REMOVE_USER = 0x02
 
 	// TODO: add more actions
 )

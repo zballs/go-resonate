@@ -14,6 +14,10 @@ type PublicKey struct {
 	key crypto.PubKeyEd25519
 }
 
+func (pub *PublicKey) Bytes() []byte {
+	return pub.key[:]
+}
+
 func (pub *PublicKey) Address() []byte {
 	return pub.key.Address()
 }
@@ -63,7 +67,12 @@ type PrivateKey struct {
 	key crypto.PrivKeyEd25519
 }
 
-func (priv PrivateKey) ToHex() string {
+func (priv *PrivateKey) PublicKey() *PublicKey {
+	key := priv.key.PubKey().(crypto.PubKeyEd25519)
+	return &PublicKey{key}
+}
+
+func (priv *PrivateKey) ToHex() string {
 	return BytesToHex(priv.key[:])
 }
 
@@ -108,6 +117,10 @@ func (priv *PrivateKey) Sign(data []byte) (sig *Signature) {
 
 type Signature struct {
 	s crypto.SignatureEd25519
+}
+
+func (sig *Signature) Bytes() []byte {
+	return sig.s[:]
 }
 
 func (sig *Signature) ToB58() string {

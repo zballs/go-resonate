@@ -2,7 +2,6 @@ package app
 
 import (
 	"bytes"
-	. "github.com/tendermint/go-common"
 	"github.com/tendermint/go-wire"
 	"github.com/tendermint/merkleeyes"
 	merk "github.com/tendermint/merkleeyes/client"
@@ -14,17 +13,19 @@ import (
 	"time"
 )
 
-const CHAIN = "res()nate"
-const VERSION = "1.0.0"
+const (
+	CHAIN   = "res()nate"
+	VERSION = "1.0.0"
+)
 
 type App struct {
 	cli   *merk.Client
-	cache *sm.State
-	state *sm.State
+	cache *state.State
+	state *state.State
 }
 
 func NewApp(cli *merk.Client) *App {
-	state := sm.NewState(cli)
+	state := state.NewState(cli)
 	return &App{
 		cli:   cli,
 		state: state,
@@ -34,7 +35,7 @@ func NewApp(cli *merk.Client) *App {
 // TMSP Requests
 
 func (app *App) Info() string {
-	return Fmt("res()nate v%s", VERSION)
+	return fmt.Sprintf("res()nate v%s", VERSION)
 }
 
 func (app *App) SetOption(key, value string) string {

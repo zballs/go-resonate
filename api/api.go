@@ -2,7 +2,7 @@ package api
 
 import (
 	"fmt"
-	// "github.com/gorilla/websocket"
+	"github.com/gorilla/websocket"
 	"github.com/tendermint/go-wire" //TODO: move to util
 	tndr "github.com/tendermint/tendermint/types"
 	"github.com/zballs/go_resonate/state"
@@ -17,8 +17,9 @@ type Api struct {
 	blocks       chan *tndr.Block
 	latestHeight int
 	logger       types.Logger
+	privAcc      *types.PrivateAccount
 	proxy        *types.Proxy
-	user         *types.PrivateAccount
+	user         *types.User
 }
 
 func NewApi(remote string) *Api {
@@ -36,12 +37,12 @@ func (api *Api) AddRoutes(mux *http.ServeMux) {
 }
 
 func Respond(w http.ResponseWriter, response interface{}) {
-	json := JSON(response)
+	json := ToJSON(response)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(json)
 }
 
-func (api *Api) CreateAccount(w http.ResponseWriter, req *http.Request) {
+func (api *Api) CreateUser(w http.ResponseWriter, req *http.Request) {
 	// Should be POST request
 	if req.Method != http.MethodPost {
 		http.Error(w, fmt.Sprintf("Expected POST request; got %s request", req.Method), http.StatusBadRequest)
@@ -52,12 +53,18 @@ func (api *Api) CreateAccount(w http.ResponseWriter, req *http.Request) {
 	if err != nil {
 		http.Error(w, "Failed to read request data", http.StatusBadRequest)
 	}
+	email := values.Get("email")
 	password := values.Get("password")
 	username := values.Get("username")
-	// Create action
-	action := types.NewAction([]byte(username), types.CREATE_ACCOUNT)
-	// Generate new keypair
+	// New user
+	user := types.NewUser(email, username)
+	// Generate keypair from password
 	priv, pub := GenerateKeypair(password)
+	// Sign user bytes
+	sig := priv.Sign(ToJSON(user))
+	data := sig.Bytes()
+	// Create action
+	action := types.NewAction(data, types.CREATE_USER)
 	// Prepare and sign action
 	action.Prepare(pub, 1) // pass sequence=1
 	action.Sign(priv, CHAIN)
@@ -71,33 +78,8 @@ func (api *Api) CreateAccount(w http.ResponseWriter, req *http.Request) {
 		Respond(w, MessageCreateAccount(nil, err))
 		return
 	}
-	keypair := NewKeypairB58(pub, priv)
-	Respond(w, MessageCreateAccount(keypair, nil))
-}
-
-func (api *Api) RemoveAccount(w http.ResponseWriter, req *http.Request) {
-	// Make sure we're logged in
-	var user *types.PrivateAccount
-	if user = api.user; user == nil {
-		http.Error(w, "Not logged in", http.StatusUnauthorized)
-		return
-	}
-	// Should be a POST request
-	if req.Method != http.MethodPost {
-		http.Error(w, fmt.Sprintf("Expected POST request; got %s request", req.Method), http.StatusBadRequest)
-		return
-	}
-	// Create action
-	action := types.NewAction(nil, types.REMOVE_ACCOUNT)
-	// Prepare and sign action
-	action.Prepare(user.PubKey, user.Sequence)
-	action.Sign(user.PrivKey, CHAIN)
-	// Broadcast tx
-	result, err := api.proxy.BroadcastTx("sync", action.Tx())
-	if err == nil {
-		err = ResultToError(result)
-	}
-	Respond(w, MessageRemoveAccount(err))
+	keypair := NewKeypair(pub, priv)
+	Respond(w, MessageCreateUser(keypair, nil))
 }
 
 func (api *Api) Login(w http.ResponseWriter, req *http.Request) {
@@ -112,30 +94,31 @@ func (api *Api) Login(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Failed to read request data", http.StatusBadRequest)
 		return
 	}
-	// PubKey
-	pub := new(PublicKey)
-	keystr := values.Get("pub_key")
-	if err = pub.FromB58(keystr); err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
+	// User info
+	email := values.Get("email")
+	username := values.Get("username")
+	user := types.NewUser(email, username)
 	// PrivKey
 	priv := new(PrivateKey)
-	keystr = values.Get("priv_key")
+	keystr := values.Get("private_key")
 	if err = priv.FromB58(keystr); err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	// Verify keypair
-	signBytes := []byte(CHAIN)
-	sig := priv.Sign(signBytes)
-	verified := pub.Verify(signBytes, sig)
-	if !verified {
-		http.Error(w, "Invalid keypair", http.StatusUnauthorized)
-		return
-	}
+	// Sign user bytes
+	sig := priv.Sign(ToJSON(user))
+	data := sig.Bytes()
+	// * * * * * * * * * * * * * * * * * * * * * * * * * * *
+	// TODO: query bigchaindb node; verify that user exists
+	// * * * * * * * * * * * * * * * * * * * * * * * * * * *
 	// Query account
-	acckey := state.AccountKey(pub.Address())
+	// Does requiring user to enter public_key through interface provide a security benefit?
+	pub := new(PublicKey)
+	keystr = values.Get("public_key")
+	if err = pub.FromB58(keystr); err != nil {
+		http.Error(w, err.Error(), http.StatusUnauthorized)
+	}
+	accKey := state.AccountKey(pub.Address())
 	query := KeyQuery(acckey)
 	result, err := api.proxy.TMSPQuery(query)
 	if err == nil {
@@ -146,4 +129,34 @@ func (api *Api) Login(w http.ResponseWriter, req *http.Request) {
 	}
 	Respond(w, MessageLogin(err))
 	// Start ws
+}
+
+func (api *Api) RemoveUser(w http.ResponseWriter, req *http.Request) {
+	// Should be POST request
+	if req.Method != http.MethodPost {
+		http.Error(w, fmt.Sprintf("Expected POST request; got %s request", req.Method), http.StatusBadRequest)
+		return
+	}
+	// Make sure we're logged in
+	var privAcc *types.PrivateAccount
+	if privAcc = api.user; privAcc == nil {
+		http.Error(w, "Not logged in", http.StatusUnauthorized)
+		return
+	}
+	// Should be a POST request
+	if req.Method != http.MethodPost {
+		http.Error(w, fmt.Sprintf("Expected POST request; got %s request", req.Method), http.StatusBadRequest)
+		return
+	}
+	// Create action
+	action := types.NewAction(nil, types.REMOVE_USER)
+	// Prepare and sign action
+	action.Prepare(privAcc.PubKey, privAcc.Sequence)
+	action.Sign(privAcc.PrivKey, CHAIN)
+	// Broadcast tx
+	result, err := api.proxy.BroadcastTx("sync", action.Tx())
+	if err == nil {
+		err = ResultToError(result)
+	}
+	Respond(w, MessageRemoveAccount(err))
 }

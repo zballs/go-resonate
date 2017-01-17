@@ -3,11 +3,46 @@ package types
 import (
 	"fmt"
 	. "github.com/zballs/go_resonate/util"
+	"io/ioutil"
+	"net/http"
+	// "net/url"
 )
 
-// BigchainDB-compatible transaction type
+// GET
+func GetTransactionStatus(endpoint, tx_id string) (string, error) {
+	url := fmt.Sprintf("%s/transactions/%s/status", endpoint, tx_id)
+	response, err := http.Get(url)
+	if err != nil {
+		return "", err
+	}
+	data, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return "", err
+	}
+	mp := make(map[string]interface{})
+	FromJSON(data, mp)
+	status := mp["status"].(string)
+	return status, nil
+}
 
-type Operation string
+func GetTransaction(endpoint, tx_id string) (*Transaction, error) {
+	url := fmt.Sprintf("%s/transactions/%s", endpoint, tx_id)
+	response, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	t := new(Transaction)
+	data, err := ReadJSON(response.Body, t)
+	if err != nil {
+		return nil, err
+	}
+	return t, nil
+}
+
+// POST
+
+// BigchainDB transaction type
+// https://docs.bigchaindb.com/projects/py-driver/en/latest/handcraft.htmls
 
 const (
 	// For ed25519
@@ -17,9 +52,12 @@ const (
 	TYPE_ID            = 4
 
 	// Operation types
-	CREATE   Operation = "CREATE"
-	GENESIS  Operation = "GENESIS"
-	TRANSFER Operation = "TRANSFER"
+	CREATE   = "CREATE"
+	GENESIS  = "GENESIS"
+	TRANSFER = "TRANSFER"
+
+	// Regex
+	FULFILLMENT_REGEX = `^cf:([1-9a-f][0-9a-f]{0,3}|0):[a-zA-Z0-9_-]*$`
 )
 
 type Transaction struct {
@@ -39,7 +77,7 @@ func NewTransaction(tx *Tx, version int) *Transaction {
 		sigs[i] = c.Cond.Details.Signature
 		c.Cond.Details.Signature = ""
 	}
-	json := JSON(transaction)
+	json := ToJSON(transaction)
 	sum := Checksum256(json)
 	transaction.Id = BytesToHex(sum)
 	for i, c := range conditions {
@@ -48,12 +86,25 @@ func NewTransaction(tx *Tx, version int) *Transaction {
 	return transaction
 }
 
+func (t *Transaction) Fulfill(priv *PrivateKey, pub *PublicKey) {
+	json := ToJSON(t)
+	sig := priv.Sign(json)
+	data := append(pub.Bytes(), sig.Bytes()...)
+	b64 := Base64RawURL(data)
+	f := fmt.Sprintf("cf:%x:%s", TYPE_ID, b64)
+	fulfillments := t.Tx.Fulfillments
+	for i, _ := range fulfillments {
+		fulfillments[i].Fulfill = f
+	}
+	t.Tx.Fulfillments = fulfillments //necessary?
+}
+
 type Tx struct {
 	Asset        *Asset       `json:"asset"`
 	Conditions   Conditions   `json:"conditions"`
 	Fulfillments Fulfillments `json:"fulfillments"`
 	Metadata     *Metadata    `json:"metadata"`
-	Operation    Operation    `json:"operation"`
+	Operation    string       `json:"operation"`
 }
 
 func NewTx(asset *Asset, conditions Conditions, fulfillments Fulfillments, meta *Metadata, op Operation) *Tx {
@@ -101,7 +152,7 @@ type Conditions []*Condition
 func NewCondition(amount, cid int, details *Details, ownersAfter []*PublicKey) *Condition {
 	sig := details.Signature
 	details.Signature = ""
-	json := JSON(details)
+	json := ToJSON(details)
 	sum := Checksum256(json)
 	b64 := Base64RawURL(sum)
 	uri := fmt.Sprintf("cc:%x:%x:%s:%d", TYPE_ID, BITMASK, b64, FULFILLMENT_LENGTH)
@@ -141,7 +192,7 @@ func NewDetails(pub *PublicKey) *Details {
 
 type Fulfillment struct {
 	FID          int                    `json:"fid"`
-	Fulfill      map[string]interface{} `json:"fulfillment"`
+	Fulfill      string                 `json:"fulfillment"`
 	Input        map[string]interface{} `json:"input"`
 	OwnersBefore []*PublicKey           `json:"owners_before"`
 }
