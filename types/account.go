@@ -28,11 +28,11 @@ func (acc *Account) Address() []byte {
 
 type PrivateAccount struct {
 	*Account
-	Key *PrivateKey
+	PrivKey *PrivateKey
 }
 
-func NewPrivateAccount(acc *Account, key *PrivateKey) *PrivateAccount {
-	return &PrivateAccount{acc, key}
+func NewPrivateAccount(acc *Account, priv *PrivateKey) *PrivateAccount {
+	return &PrivateAccount{acc, priv}
 }
 
 type AccountGetter interface {

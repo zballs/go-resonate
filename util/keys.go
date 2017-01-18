@@ -1,7 +1,6 @@
 package util
 
 import (
-	"github.com/pkg/errors"
 	"github.com/tendermint/go-crypto"
 	bcrypt "golang.org/x/crypto/bcrypt"
 )
@@ -23,28 +22,28 @@ func (pub *PublicKey) Address() []byte {
 }
 
 func (pub *PublicKey) ToHex() string {
-	return BytesToHex(pub.key[:])
+	return BytesToHex(pub.Bytes())
 }
 
 func (pub *PublicKey) FromHex(hexstr string) error {
 	data := BytesFromHex(hexstr)
 	if length := len(data); length != PUBKEY_LENGTH {
-		return errors.Errorf("Expected public key with length=%d; got length=%d\n", PUBKEY_LENGTH, length)
+		return Errorf("Expected public key with length=%d; got length=%d\n", PUBKEY_LENGTH, length)
 	}
-	copy(pub.key[:], data)
+	copy(pub.Bytes(), data)
 	return nil
 }
 
 func (pub *PublicKey) ToB58() string {
-	return BytesToB58(pub.key[:])
+	return BytesToB58(pub.Bytes())
 }
 
 func (pub *PublicKey) FromB58(b58 string) error {
 	data := BytesFromB58(b58)
 	if length := len(data); length != PUBKEY_LENGTH {
-		return errors.Errorf("Expected public key with length=%d; got length=%d\n", PUBKEY_LENGTH, length)
+		return Errorf("Expected public key with length=%d; got length=%d\n", PUBKEY_LENGTH, length)
 	}
-	copy(pub.key[:], data)
+	copy(pub.Bytes(), data)
 	return nil
 }
 
@@ -79,7 +78,7 @@ func (priv *PrivateKey) ToHex() string {
 func (priv *PrivateKey) FromHex(hexstr string) error {
 	data := BytesFromHex(hexstr)
 	if length := len(data); length != PRIVKEY_LENGTH {
-		return errors.Errorf("Expected private key with length=%d; got length=%d\n", PRIVKEY_LENGTH, length)
+		return Errorf("Expected private key with length=%d; got length=%d\n", PRIVKEY_LENGTH, length)
 	}
 	copy(priv.key[:], data)
 	return nil
@@ -92,7 +91,7 @@ func (priv *PrivateKey) ToB58() string {
 func (priv *PrivateKey) FromB58(b58 string) error {
 	data := BytesFromB58(b58)
 	if length := len(data); length != PRIVKEY_LENGTH {
-		return errors.Errorf("Expected private key with length=%d; got length=%d\n", PRIVKEY_LENGTH, length)
+		return Errorf("Expected private key with length=%d; got length=%d\n", PRIVKEY_LENGTH, length)
 	}
 	copy(priv.key[:], data)
 	return nil
@@ -123,16 +122,37 @@ func (sig *Signature) Bytes() []byte {
 	return sig.s[:]
 }
 
+func (sig *Signature) FromBytes(data []byte) error {
+	if length := len(data); length != SIGNATURE_LENGTH {
+		return Errorf("Expected data with length=%d; got length=%d\n", SIGNATURE_LENGTH, length)
+	}
+	copy(sig.s[:], data)
+	return nil
+}
+
 func (sig *Signature) ToB58() string {
-	return BytesToB58(sig.s[:])
+	return BytesToB58(sig.Bytes())
 }
 
 func (sig *Signature) FromB58(b58 string) error {
 	data := BytesFromB58(b58)
 	if length := len(data); length != PRIVKEY_LENGTH {
-		return errors.Errorf("Expected private key with length=%d; got length=%d\n", PRIVKEY_LENGTH, length)
+		return Errorf("Expected private key with length=%d; got length=%d\n", PRIVKEY_LENGTH, length)
 	}
-	copy(sig.s[:], data)
+	copy(sig.Bytes(), data)
+	return nil
+}
+
+func (sig *Signature) ToHex() string {
+	return BytesToHex(sig.Bytes())
+}
+
+func (sig *Signature) FromHex(hexstr string) error {
+	data := BytesFromHex(hexstr)
+	if length := len(data); length != PRIVKEY_LENGTH {
+		return Errorf("Expected private key with length=%d; got length=%d\n", PRIVKEY_LENGTH, length)
+	}
+	copy(sig.Bytes(), data)
 	return nil
 }
 

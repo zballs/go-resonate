@@ -6,6 +6,12 @@ import (
 	. "github.com/zballs/go_resonate/util"
 )
 
+const (
+	CREATE_USER = "create_user"
+	LOGIN       = "login"
+	REMOVE_USER = "remove_user"
+)
+
 func ResultToError(result interface{}) error {
 	switch result.(type) {
 	case *ctypes.ResultTMSPQuery:
@@ -31,18 +37,23 @@ type Message struct {
 	Error  error       `json:"error, omitempty"`
 }
 
-type Keypair struct {
+type UserAccount struct {
+	Id      string      `json:"id"`
 	Privkey *PrivateKey `json:"private_key"`
 	Pubkey  *PublicKey  `json:"public_key"`
 }
 
-func NewKeypairB58(pub *PublicKey, priv *PrivateKey) *Keypair {
-	return &Keypair{priv, pub}
+func NewUserAccount(id string, priv *PrivateKey, pub *PublicKey) *UserAccount {
+	return &UserAccount{
+		Id:      id,
+		Privkey: priv,
+		Pubkey:  pub,
+	}
 }
 
-func MessageCreateUser(data *Keypair, err error) *Message {
+func MessageCreateUser(data *UserAccount, err error) *Message {
 	return &Message{
-		Action: "create_account",
+		Action: CREATE_USER,
 		Data:   data,
 		Error:  err,
 	}
@@ -50,14 +61,14 @@ func MessageCreateUser(data *Keypair, err error) *Message {
 
 func MessageRemoveUser(err error) *Message {
 	return &Message{
-		Action: "remove_account",
+		Action: REMOVE_USER,
 		Error:  err,
 	}
 }
 
 func MessageLogin(err error) *Message {
 	return &Message{
-		Action: "login",
+		Action: LOGIN,
 		Error:  err,
 	}
 }

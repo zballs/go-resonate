@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	CREATE_USER = 0x01
-	REMOVE_USER = 0x02
+	CREATE_ACCOUNT = 0x01
+	REMOVE_ACCOUNT = 0x02
 
 	// TODO: add more actions
 )
@@ -55,12 +55,12 @@ func (in ActionInput) String() string {
 }
 
 type Action struct {
-	Data  []byte       `json: "data"`
-	Input *ActionInput `json: "input"`
-	Type  byte         `json: "type"`
+	Data  map[string]interface{} `json: "data"`
+	Input *ActionInput           `json: "input"`
+	Type  byte                   `json: "type"`
 }
 
-func NewAction(data []byte, _type byte) Action {
+func NewAction(data map[string]interface{}, _type byte) Action {
 	return Action{
 		Data: data,
 		Type: _type,

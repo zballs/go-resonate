@@ -4,7 +4,6 @@ const (
 	// User types
 	ARTIST   = "artist"
 	LISTENER = "listener"
-	// ORGANIZATION = "organization"
 )
 
 // User
@@ -24,7 +23,7 @@ func NewUser(email, name, _type string) *User {
 }
 
 func NewArtist(email, name string) *User {
-	return &Artist{
+	return &User{
 		Email: email,
 		Name:  name,
 		Type:  ARTIST,

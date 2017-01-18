@@ -45,8 +45,7 @@ func FromJSON(data []byte, v interface{}) {
 	Check(err)
 }
 
-func ReadJSON(r io.Reader, v interface{}) {
+func ReadJSON(r io.Reader, v interface{}) error {
 	enc := json.NewDecoder(r)
-	err := enc.Decode(v)
-	Check(err)
+	return enc.Decode(v)
 }

@@ -1,16 +1,18 @@
-package types
+package bigchain
 
 import (
+	"bytes"
 	"fmt"
 	. "github.com/zballs/go_resonate/util"
 	"io/ioutil"
 	"net/http"
-	// "net/url"
 )
 
+const IPDB_ENDPOINT = "http://tethys.ipdb.foundation:9984"
+
 // GET
-func GetTransactionStatus(endpoint, tx_id string) (string, error) {
-	url := fmt.Sprintf("%s/transactions/%s/status", endpoint, tx_id)
+func GetTransactionStatus(tx_id string) (string, error) {
+	url := IPDB_ENDPOINT + "/transactions/" + tx_id + "/status"
 	response, err := http.Get(url)
 	if err != nil {
 		return "", err
@@ -25,15 +27,14 @@ func GetTransactionStatus(endpoint, tx_id string) (string, error) {
 	return status, nil
 }
 
-func GetTransaction(endpoint, tx_id string) (*Transaction, error) {
-	url := fmt.Sprintf("%s/transactions/%s", endpoint, tx_id)
+func GetTransaction(tx_id string) (*Transaction, error) {
+	url := IPDB_ENDPOINT + "/transactions/" + tx_id
 	response, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
 	t := new(Transaction)
-	data, err := ReadJSON(response.Body, t)
-	if err != nil {
+	if err = ReadJSON(response.Body, t); err != nil {
 		return nil, err
 	}
 	return t, nil
@@ -66,6 +67,47 @@ type Transaction struct {
 	Version int    `json:"version"`
 }
 
+// Specific Transactions
+
+func PostUserTransaction(t *Transaction) (string, error) {
+	url := IPDB_ENDPOINT + "/transactions/"
+	buf := new(bytes.Buffer)
+	if err := ReadJSON(buf, t); err != nil {
+		return "", err
+	}
+	response, err := http.Post(url, "application/json", buf)
+	if err != nil {
+		return "", err
+	}
+	rd, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return "", err
+	}
+	mp := make(map[string]interface{})
+	FromJSON(rd, mp)
+	id := mp["id"].(string)
+	return id, nil
+}
+
+func NewUserTransaction(data map[string]interface{}, pub *PublicKey) *Transaction {
+	asset := NewAsset(data, false, false, false) //should it be updatable?
+	details := NewDetails(pub)
+	condition := NewCondition(1, 0, details, pub) //what should cid be?
+	fulfillment := NewFulfillment(0, pub)         //what should fid be?
+	meta := NewMetadata(nil)
+	tx := NewTx(
+		asset,
+		Conditions{condition},
+		Fulfillments{fulfillment},
+		meta, // what should metadata be?
+		CREATE,
+	)
+	transaction := NewTransaction(tx, 0) //what should version be?
+	return transaction
+}
+
+// Generic transaction
+
 func NewTransaction(tx *Tx, version int) *Transaction {
 	transaction := &Transaction{
 		Tx:      tx,
@@ -84,6 +126,11 @@ func NewTransaction(tx *Tx, version int) *Transaction {
 		c.Cond.Details.Signature = sigs[i]
 	}
 	return transaction
+}
+
+func (t *Transaction) GetData() map[string]interface{} {
+	// for convenience
+	return t.Tx.Asset.Data
 }
 
 func (t *Transaction) Fulfill(priv *PrivateKey, pub *PublicKey) {
@@ -107,7 +154,7 @@ type Tx struct {
 	Operation    string       `json:"operation"`
 }
 
-func NewTx(asset *Asset, conditions Conditions, fulfillments Fulfillments, meta *Metadata, op Operation) *Tx {
+func NewTx(asset *Asset, conditions Conditions, fulfillments Fulfillments, meta *Metadata, op string) *Tx {
 	return &Tx{
 		Asset:        asset,
 		Conditions:   conditions,
@@ -149,7 +196,7 @@ type Condition struct {
 
 type Conditions []*Condition
 
-func NewCondition(amount, cid int, details *Details, ownersAfter []*PublicKey) *Condition {
+func NewCondition(amount, cid int, details *Details, ownersAfter ...*PublicKey) *Condition {
 	sig := details.Signature
 	details.Signature = ""
 	json := ToJSON(details)
@@ -199,7 +246,7 @@ type Fulfillment struct {
 
 type Fulfillments []*Fulfillment
 
-func NewFulfillment(fid int, ownersBefore []*PublicKey) *Fulfillment {
+func NewFulfillment(fid int, ownersBefore ...*PublicKey) *Fulfillment {
 	return &Fulfillment{
 		FID:          fid,
 		OwnersBefore: ownersBefore,
