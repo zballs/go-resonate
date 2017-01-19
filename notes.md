@@ -55,20 +55,25 @@ TODO
 #### Proof of Work
 Pros 
 - Bitcoin is still alive
+
 Cons
 - Slower
 - Energy inefficient
+
 #### Proof of Stake 
 Pros
 - Faster
 - Maybe better for ordering application actions/transactions as opposed to cryptocurrency 
+
 Cons
 - "Nothing at stake" issue 
 - How to circumvent FLP impossibility result? Randomize or introduce timeouts. People don't like randomization but honey badger says an adversarial scheduler can thwart PBFT ("When Weak Synchrony Fails").. is this a practical concern?
+
 #### Alternatives - proofs of storage/space(time)
 Pros
 - Something at stake (i.e. disk space), but depending on the protocol, an adversary may be able to mine a block using significantly less disk space than we want
 - Many people have empty disk space on their computers, which they might be willing to dedicate to PoS mining
+
 Cons
 - Very few (if any) impls
 - Make our own impl, e.g. following specification in Spacemint
