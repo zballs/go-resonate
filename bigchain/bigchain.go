@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-const IPDB_ENDPOINT = "http://tethys.ipdb.foundation:9984"
+const IPDB_ENDPOINT = ""
 
 // GET
 func GetTransactionStatus(tx_id string) (string, error) {
