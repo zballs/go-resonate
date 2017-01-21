@@ -34,13 +34,13 @@ func BytesFromHex(hexstr string) []byte {
 }
 
 // JSON
-func ToJSON(v interface{}) []byte {
+func MarshalJSON(v interface{}) []byte {
 	data, err := json.Marshal(v)
 	Check(err)
 	return data
 }
 
-func FromJSON(data []byte, v interface{}) {
+func UnmarshalJSON(data []byte, v interface{}) {
 	err := json.Unmarshal(data, v)
 	Check(err)
 }

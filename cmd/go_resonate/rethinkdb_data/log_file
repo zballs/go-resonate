@@ -1,0 +1,35 @@
+2017-01-20T22:19:13.380177000 40.382984s notice: Recursively removing directory /Users/zach/go/src/github.com/zballs/go_resonate/cmd/go_resonate/rethinkdb_data/tmp
+2017-01-20T22:19:13.384808000 40.387618s notice: Initializing directory /Users/zach/go/src/github.com/zballs/go_resonate/cmd/go_resonate/rethinkdb_data
+2017-01-20T22:19:13.384896000 40.387702s info: Creating a default database for your convenience. (This is because you ran 'rethinkdb' without 'create', 'serve', or '--join', and the directory '/Users/zach/go/src/github.com/zballs/go_resonate/cmd/go_resonate/rethinkdb_data' did not already exist or is empty.)
+2017-01-20T22:19:13.384936000 40.387743s notice: Running rethinkdb 2.3.5 (CLANG 7.3.0 (clang-703.0.31))...
+2017-01-20T22:19:13.390672000 40.393479s notice: Running on Darwin 15.5.0 x86_64
+2017-01-20T22:19:13.390729000 40.393535s notice: Loading data from directory /Users/zach/go/src/github.com/zballs/go_resonate/cmd/go_resonate/rethinkdb_data
+2017-01-20T22:19:13.533894000 40.536700s info: Automatically using cache size of 1650 MB
+2017-01-20T22:19:13.537683000 40.540489s notice: Listening for intracluster connections on port 29015
+2017-01-20T22:19:13.538912000 40.541719s notice: Listening for client driver connections on port 28015
+2017-01-20T22:19:13.539026000 40.541832s notice: Listening for administrative HTTP connections on port 8080
+2017-01-20T22:19:13.539029000 40.541835s notice: Listening on cluster addresses: 127.0.0.1, ::1
+2017-01-20T22:19:13.539034000 40.541840s notice: Listening on driver addresses: 127.0.0.1, ::1
+2017-01-20T22:19:13.539036000 40.541842s notice: Listening on http addresses: 127.0.0.1, ::1
+2017-01-20T22:19:13.539040000 40.541846s notice: To fully expose RethinkDB on the network, bind to all addresses by running rethinkdb with the `--bind all` command line option.
+2017-01-20T22:19:13.539045000 40.541851s notice: Server ready, "myhost_local_gtb" d2e0eeef-122d-4a12-8a23-354b0dcadc23
+2017-01-21T00:00:48.079081000 6134.927422s info: Table 6025e850-d506-4a0d-99dc-e3ca1df9331c: Starting a new Raft election for term 1.
+2017-01-21T00:00:48.079676000 6134.928018s info: Table 6025e850-d506-4a0d-99dc-e3ca1df9331c: Added replica on this server.
+2017-01-21T00:00:48.102504000 6134.950846s info: Table 6025e850-d506-4a0d-99dc-e3ca1df9331c: This server is Raft leader for term 1. Latest log index is 0.
+2017-01-21T00:00:48.867849000 6135.716191s info: Table faff35ae-26fd-4646-a491-bb1441483163: Starting a new Raft election for term 1.
+2017-01-21T00:00:48.868170000 6135.716512s info: Table faff35ae-26fd-4646-a491-bb1441483163: Added replica on this server.
+2017-01-21T00:00:48.891314000 6135.739656s info: Table faff35ae-26fd-4646-a491-bb1441483163: This server is Raft leader for term 1. Latest log index is 0.
+2017-01-21T00:00:49.645978000 6136.494276s info: Table 791158c0-d31d-4685-b146-46fdb03751bf: Starting a new Raft election for term 1.
+2017-01-21T00:00:49.646366000 6136.494664s info: Table 791158c0-d31d-4685-b146-46fdb03751bf: Added replica on this server.
+2017-01-21T00:00:49.672402000 6136.520700s info: Table 791158c0-d31d-4685-b146-46fdb03751bf: This server is Raft leader for term 1. Latest log index is 0.
+2017-01-21T00:00:50.178110000 6137.026407s info: Table 6025e850-d506-4a0d-99dc-e3ca1df9331c: Configuration is changing.
+2017-01-21T00:00:50.227329000 6137.075626s info: Table 6025e850-d506-4a0d-99dc-e3ca1df9331c: Configuration is changing.
+2017-01-21T00:00:50.298979000 6137.147276s info: Table 6025e850-d506-4a0d-99dc-e3ca1df9331c: Configuration is changing.
+2017-01-21T00:00:50.405966000 6137.254264s info: Table 6025e850-d506-4a0d-99dc-e3ca1df9331c: Configuration is changing.
+2017-01-21T00:00:52.065676000 6138.913929s info: Table faff35ae-26fd-4646-a491-bb1441483163: Configuration is changing.
+2017-01-21T00:00:52.481416000 6139.329670s info: Table 791158c0-d31d-4685-b146-46fdb03751bf: Configuration is changing.
+2017-01-21T00:00:57.833904000 6144.681981s notice: Server got SIGINT from pid 24913, uid 501; shutting down...
+2017-01-21T00:00:57.834159000 6144.682235s notice: Shutting down client connections...
+2017-01-21T00:00:57.834481000 6144.682558s notice: All client connections closed.
+2017-01-21T00:00:57.834492000 6144.682568s notice: Shutting down storage engine... (This may take a while if you had a lot of unflushed data in the writeback cache.)
+2017-01-21T00:00:57.847228000 6144.695304s notice: Storage engine shut down.

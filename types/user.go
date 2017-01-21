@@ -8,32 +8,36 @@ const (
 
 // User
 type User struct {
-	Email string `json:"email"`
-	Name  string `json:"username"`
-	Type  string `json:"type"`
+	Email    string `json:"email"`
+	Name     string `json:"username"`
+	Password string `json:"password"`
+	Type     string `json:"type"`
 	// Other info?
 }
 
-func NewUser(email, name, _type string) *User {
+func NewUser(email, name, password, _type string) *User {
 	return &User{
-		Email: email,
-		Name:  name,
-		Type:  _type,
+		Email:    email,
+		Name:     name,
+		Password: password,
+		Type:     _type,
 	}
 }
 
-func NewArtist(email, name string) *User {
+func NewArtist(email, name, password string) *User {
 	return &User{
-		Email: email,
-		Name:  name,
-		Type:  ARTIST,
+		Email:    email,
+		Name:     name,
+		Password: password,
+		Type:     ARTIST,
 	}
 }
 
-func NewListener(email, name string) *User {
+func NewListener(email, name, password string) *User {
 	return &User{
-		Email: email,
-		Name:  name,
-		Type:  LISTENER,
+		Email:    email,
+		Name:     name,
+		Password: password,
+		Type:     LISTENER,
 	}
 }

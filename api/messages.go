@@ -1,74 +1,29 @@
 package api
 
-import (
-	"github.com/pkg/errors"
-	ctypes "github.com/tendermint/tendermint/rpc/core/types"
-	. "github.com/zballs/go_resonate/util"
-)
+import . "github.com/zballs/go_resonate/util"
 
-const (
-	CREATE_USER = "create_user"
-	LOGIN       = "login"
-	REMOVE_USER = "remove_user"
-)
-
-func ResultToError(result interface{}) error {
-	switch result.(type) {
-	case *ctypes.ResultTMSPQuery:
-		tmResult := result.(*ctypes.ResultTMSPQuery).Result
-		if tmResult.Code == 0 {
-			return nil
-		}
-		return errors.New(tmResult.Error())
-	case *ctypes.ResultBroadcastTx:
-		_result := result.(*ctypes.ResultBroadcastTx)
-		if _result.Code == 0 {
-			return nil
-		}
-		return errors.New(_result.Log)
-	default:
-		return errors.New("Unrecognized result type")
-	}
-}
-
-type Message struct {
-	Action string      `json:"action"`
-	Data   interface{} `json:"data, omitempty"`
-	Error  error       `json:"error, omitempty"`
-}
-
-type UserAccount struct {
-	Id      string      `json:"id"`
+type UserInfo struct {
 	Privkey *PrivateKey `json:"private_key"`
 	Pubkey  *PublicKey  `json:"public_key"`
+	UserId  string      `json:"user_id"`
 }
 
-func NewUserAccount(id string, priv *PrivateKey, pub *PublicKey) *UserAccount {
-	return &UserAccount{
-		Id:      id,
+func NewUserInfo(userId string, priv *PrivateKey, pub *PublicKey) *UserInfo {
+	return &UserInfo{
+		UserId:  userId,
 		Privkey: priv,
 		Pubkey:  pub,
 	}
 }
 
-func MessageCreateUser(data *UserAccount, err error) *Message {
-	return &Message{
-		Action: CREATE_USER,
-		Data:   data,
-		Error:  err,
-	}
+type ProjectInfo struct {
+	ProjectId string   `json:"project_id"`
+	SongIds   []string `json:"song_ids"`
 }
 
-func MessageRemoveUser(err error) *Message {
-	return &Message{
-		Action: REMOVE_USER,
-		Error:  err,
-	}
-}
-
-func MessageLogin(err error) *Message {
-	return &Message{
-		Action: LOGIN,
-		Error:  err,
+func NewProjectInfo(projectId string, songIds []string) *ProjectInfo {
+	return &ProjectInfo{
+		ProjectId: projectId,
+		SongIds:   songIds,
 	}
 }
