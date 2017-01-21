@@ -13,7 +13,7 @@ The client-side application interface. It's currently designed to run locally an
 [Handcrafting transactions](https://docs.bigchaindb.com/projects/py-driver/en/latest/handcraft.html) and sending them to BigchainDB/IPDB.
 
 ### Coala
-A json-ld implementation of the Coalaip Rights Reference Model ([RRM](https://github.com/COALAIP/specs/tree/master/data-structure)).
+A json-ld implementation of the Coala IP [spec](https://github.com/COALAIP/specs/tree/master/data-structure).
 
 ### Types
 Contains the `user` type (below) and others.
@@ -50,11 +50,11 @@ Note: none of your personal information is communicated or stored in raw form!
 
 ### Logging in
 What you do:
-- Enter your `private key`, `user id`, email, username, password, and account type into the interface. Woah, that's a lot of stuff, maybe we can have a file containing some/all of this information that a user uploads to login?
+- Enter your `private key`, `user id`, email, username, password, and account type into the interface. Woah, that's a lot, maybe we can have a file containing this information that a user uploads to login?
 
 What happens next:
 - The application asks BigchainDB/IPDB for the `user signature` corresponding to `user id` 
-- It verifies the `user signature` with the `public key` and user information
+- It verifies the `user signature` with your `public key` (derived from your `private key`) and personal information
 - Your `public key`, `private key`, `user id`, and personal information are kept in memory for the remainder of the session
 
 What you get:
