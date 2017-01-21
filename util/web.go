@@ -6,6 +6,8 @@ import (
 	"net/http"
 )
 
+// Page
+
 type Page struct {
 	Title string
 	Body  []byte
@@ -28,27 +30,9 @@ func LoadPage(title string) (*Page, error) {
 func CreatePages(titles ...string) {
 	var pg *Page
 	for _, title := range titles {
-		pg = &Page{Title: title, Body: []byte("")}
+		pg = &Page{Title: title, Body: nil}
 		pg.Save()
 	}
-}
-
-// File system
-
-type JustFiles struct {
-	fs http.FileSystem
-}
-
-type MyFile struct {
-	http.File
-}
-
-func (jf JustFiles) Open(filename string) (http.File, error) {
-	f, err := jf.fs.Open(filename)
-	if err != nil {
-		return nil, err
-	}
-	return MyFile{f}, nil
 }
 
 // Templates

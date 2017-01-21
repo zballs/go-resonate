@@ -6,14 +6,26 @@
 <div id="login">
  <form id="login-form">
     <h2>Login</h2>
-    <input type="text" name="public_key" placeholder="public key" required />
-    <input type="password" name="private_key" placeholder="private key" required />
-    <input type="submit" value="enter" />
+    <input type="password" name="private_key" placeholder="private key" required /><br>
+    <input type="text" name="user_id" placeholder="user id" required /><br>
+    <select form="login-form" name="type">
+        <option value="artist">artist</option>
+        <option value="listener">listener</option>
+    </select><br>
+    <input type="text" name="email" placeholder="email" required /><br>
+    <input type="text" name="username" placeholder="username" required /><br>
+    <input type="password" name="password" placeholder="password" required /><br>
+    <input type="submit" value="login" />
   </form>
 </div>
 <div id="register-user">
-   <form id="register-user-form">
+  <form id="register-user-form">
       <h2>Register User</h2>
+      <select form="register-user-form" name="type">
+        <option value="artist">artist</option>
+        <option value="listener">listener</option>
+      </select><br>
+      <input type="text" name="email" placeholder="email" required /><br>
       <input type="text" name="username" placeholder="username" required /><br>
       <input type="password" name="password" placeholder="password" required /><br>
       <input type="submit" value="register"/>
@@ -21,7 +33,7 @@
 </div>
 <script type="text/javascript">
 function httpPostAsync(addr, data, callback) {
-    var xhr = register XMLHttpRequest ();
+    var xhr = new XMLHttpRequest ();
     xhr.onreadystatechange = function() {
       if (xhr.readyState == 4) {
         if (xhr.status == 200) {
@@ -35,25 +47,10 @@ function httpPostAsync(addr, data, callback) {
     xhr.send(data);
 };
 
-window.onclick = function(event) {
-  var login = document.getElementById("login");
-  var registerUser = document.getElementById("register-user");
-  if (event.target == document.getElementById("login")) {
-     login.style.display = "none";
-  }; 
-  if (event.target == document.getElementById("register-user")) {
-     registerUser.style.display = "none";
-  };
-}
-
 // Callbacks
 var loginCallback = function(responseText) {
   var json = JSON.parse(responseText);
-  if (json.action == "login" && json.error == null)  {
-    window.location.replace("http://localhost:8888/citizen");
-  } else {
-    console.log(json);
-  };
+  console.log(json); //for now
 };
 
 var registerUserCallback = function(responseText) {
@@ -68,7 +65,6 @@ window.onload = function(){
       event.preventDefault();
       var formData = $("#login-form").serialize();
       httpPostAsync("http://localhost:8888/login", formData, loginCallback);
-
     };
     // Register user 
     var registerUserForm = document.getElementById("register-user-form");
