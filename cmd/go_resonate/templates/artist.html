@@ -3,8 +3,8 @@
 {{end}}
 
 {{define "body"}}
-<div id="new-project">
-    <form id="new-project-form" enctype="multipart/form-data">
+<div id="create-project">
+    <form id="create-project-form" enctype="multipart/form-data">
         <h2>New Project</h2>
         <input type="text" name="project_title" placeholder="project title" required /><br>
         <input type="text" name="project_place" placeholder="project place" required /><br>
@@ -29,18 +29,18 @@ function httpPostAsync(addr, data, callback) {
     xhr.send(data);
 };
 
-var newProjectCallback = function(responseText) {
+var createProjectCallback = function(responseText) {
   var json = JSON.parse(responseText);
   console.log(json); //for now
 };
 
 window.onload = function() {
     // New project
-    var newProjectForm = document.getElementById("new-project-form");
-    newProjectForm.onsubmit = function(event) {
+    var createProjectForm = document.getElementById("create-project-form");
+    createProjectForm.onsubmit = function(event) {
       event.preventDefault();
       var formData = new FormData(event.target);
-      httpPostAsync("http://localhost:8888/new_project", formData, newProjectCallback);
+      httpPostAsync("http://localhost:8888/create_project", formData, createProjectCallback);
     };
 }
 </script>

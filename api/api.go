@@ -5,6 +5,7 @@ import (
 	"github.com/zballs/go_resonate/coala"
 	"github.com/zballs/go_resonate/types"
 	. "github.com/zballs/go_resonate/util"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -14,28 +15,42 @@ type Api struct {
 	logger types.Logger
 	priv   *PrivateKey
 	pub    *PublicKey
-	serv   *types.HttpService
+	//serv   *types.HttpService
+	serv   *types.SocketService
 	user   *types.User
 	userId string
 }
 
-func NewApi() *Api {
+func NewApi(dir string) *Api {
+	logger := types.NewLogger("api")
+	serv, err := types.NewSocketService("", dir)
+	Check(err)
 	return &Api{
-		logger: types.NewLogger("api"),
+		logger: logger,
+		serv:   serv,
 	}
 }
 
-func (api *Api) Configure(dir string, mux *http.ServeMux) {
-	mux.HandleFunc("/new_project", api.NewProject)
+func (api *Api) AddRoutes(mux *http.ServeMux) {
+	mux.HandleFunc("/create_project", api.CreateProject)
+	mux.HandleFunc("/play_song", api.PlaySong)
 	mux.HandleFunc("/user_login", api.UserLogin)
 	mux.HandleFunc("/user_register", api.UserRegister)
-	api.serv = types.NewHttpService(dir, mux)
 }
 
-func Respond(w http.ResponseWriter, response interface{}) {
-	json := MarshalJSON(response)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(json)
+func (api *Api) NewProject(projectTitle string) map[string]interface{} {
+	artistName := api.user.Name
+	data := coala.NewWork(projectTitle, artistName)
+	return data
+}
+
+func (api *Api) NewSong(songTitle, projectId, projectPlace string) map[string]interface{} {
+	example := "" //what should example be?
+	isManifestation := true
+	date := DateString()
+	playAddr := api.serv.PlayAddr()
+	data := coala.NewDigitalManifestation(songTitle, example, isManifestation, projectId, date, projectPlace, playAddr)
+	return data
 }
 
 func (api *Api) UserRegister(w http.ResponseWriter, req *http.Request) {
@@ -72,7 +87,7 @@ func (api *Api) UserRegister(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	userInfo := NewUserInfo(id, priv, pub)
-	Respond(w, userInfo)
+	WriteJSON(w, userInfo)
 }
 
 func (api *Api) UserLogin(w http.ResponseWriter, req *http.Request) {
@@ -126,10 +141,59 @@ func (api *Api) UserLogin(w http.ResponseWriter, req *http.Request) {
 	api.pub = pub
 	api.user = user
 	api.userId = userId
-	Respond(w, "Logged in!")
+	WriteJSON(w, "Logged in!")
 }
 
-func (api *Api) NewProject(w http.ResponseWriter, req *http.Request) {
+func (api *Api) PlaySong(w http.ResponseWriter, req *http.Request) {
+	// Should be GET request
+	if req.Method != http.MethodGet {
+		http.Error(w, Sprintf("Expected GET request; got %s request", req.Method), http.StatusBadRequest)
+		return
+	}
+	// Make sure we're logged in
+	if api.priv == nil {
+		http.Error(w, "Privkey is not set", http.StatusUnauthorized)
+		return
+	}
+	if api.pub == nil {
+		http.Error(w, "Pubkey is not set", http.StatusUnauthorized)
+		return
+	}
+	if api.user == nil {
+		http.Error(w, "User is not set", http.StatusUnauthorized)
+		return
+	}
+	if api.userId == "" {
+		http.Error(w, "User Id is not set", http.StatusUnauthorized)
+		return
+	}
+	// Get request data
+	values, err := UrlValues(req)
+	if err != nil {
+		//..
+	}
+	songId := values.Get("song_id")
+	t, err := bigchain.GetTransaction(songId)
+	if err != nil {
+		//..
+	}
+	playAddr := t.GetValue("url").(string)
+	conn, err := net.Dial("tcp", playAddr)
+	if err != nil {
+		//..
+	}
+	defer conn.Close()
+	projectTitle := values.Get("project_title")
+	songTitle := values.Get("song_title")
+	sig := api.priv.Sign([]byte(projectTitle + songTitle))
+	playRequest := types.NewPlayRequest(projectTitle, songTitle, api.pub, sig)
+	if err := WriteJSON(conn, playRequest); err != nil {
+		//..
+	}
+	Copy(w, conn)
+}
+
+func (api *Api) CreateProject(w http.ResponseWriter, req *http.Request) {
 	// Should be POST request
 	if req.Method != http.MethodPost {
 		http.Error(w, Sprintf("Expected POST request; got %s request", req.Method), http.StatusBadRequest)
@@ -160,8 +224,8 @@ func (api *Api) NewProject(w http.ResponseWriter, req *http.Request) {
 	}
 	// Project title
 	projectTitle := form.Value["project_title"][0]
-	// Create new work
-	data := coala.NewWork(projectTitle, api.user.Name)
+	// Create new project
+	data := api.NewProject(projectTitle)
 	// Generate and send transaction to IPDB
 	t := bigchain.GenerateTransaction(data, api.pub)
 	t.Fulfill(api.priv, api.pub)
@@ -174,16 +238,6 @@ func (api *Api) NewProject(w http.ResponseWriter, req *http.Request) {
 	songs := form.File["songs"]
 	songIds := make([]string, len(songs))
 	for i, song := range songs {
-		songTitle := strings.SplitN(song.Filename, ".", 2)[0]
-		// What should example and url be?
-		data = coala.NewDigitalManifestation(songTitle, "", true, projectId, DateString(), projectPlace, req.RemoteAddr)
-		// Generate and send transaction to IPDB
-		t = bigchain.GenerateTransaction(data, api.pub)
-		songIds[i], err = bigchain.PostTransaction(t)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
 		// Store file
 		path := api.serv.Path(projectTitle, song.Filename)
 		file, err := os.Create(path)
@@ -197,7 +251,16 @@ func (api *Api) NewProject(w http.ResponseWriter, req *http.Request) {
 			return
 		}
 		Copy(file, _file)
+		songTitle := strings.SplitN(song.Filename, ".", 2)[0]
+		data = api.NewSong(songTitle, projectId, projectPlace)
+		// Generate and send transaction to IPDB
+		t = bigchain.GenerateTransaction(data, api.pub)
+		songIds[i], err = bigchain.PostTransaction(t)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
 	}
 	projectInfo := NewProjectInfo(projectId, songIds)
-	Respond(w, projectInfo)
+	WriteJSON(w, projectInfo)
 }

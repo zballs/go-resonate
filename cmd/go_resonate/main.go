@@ -6,6 +6,8 @@ import (
 	"net/http"
 )
 
+const dir = ""
+
 func main() {
 
 	CreatePages("artist", "listener", "login")
@@ -17,10 +19,10 @@ func main() {
 	mux.HandleFunc("/login", TemplateHandler("login.html"))
 
 	// Create api
-	api := api.NewApi()
+	api := api.NewApi(dir)
 
-	// Add routes to multiplexer and create streaming service
-	api.Configure(mux)
+	// Add routes to multiplexer
+	api.AddRoutes(mux)
 
 	// Start HTTP server with multiplexer
 	http.ListenAndServe(":8888", mux)

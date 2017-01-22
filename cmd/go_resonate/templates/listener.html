@@ -1,0 +1,48 @@
+{{define "head"}}
+  <title>{{ .Title}}</title>
+{{end}}
+
+{{define "body"}}
+<div id="play-song">
+    <form id="play-song-form">
+        <h2>Play song</h2>
+        <!-- // -->
+        <input type="text" name="song_id" placeholder="song id" required /><br>
+        <!-- should be logged in -->
+        <!-- public key, signature -->
+        <input type="submit" value="create" />
+    </form>
+</div>
+<script type="text/javascript">
+
+function httpGetAsync(addr, data, callback) {
+    var xhr = new XMLHttpRequest ();
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState == 4) {
+        if (xhr.status == 200) {
+          callback(xhr.responseText);
+        } else {
+          alert(xhr.responseText);
+        };
+      };
+    };
+    xhr.open("GET", addr, true); 
+    xhr.send(data);
+};
+
+var playSongCallback = function(responseText) {
+  var json = JSON.parse(responseText);
+  console.log(json); //for now
+};
+
+window.onload = function() {
+    // New project
+    var playSongForm = document.getElementById("play-song-form");
+    playSongForm.onsubmit = function(event) {
+      event.preventDefault();
+      var formData = $("#play-song-form").serialize();
+      httpGetAsync("http://localhost:8888/play_song", formData, playSongCallback);
+    };
+}
+</script>
+{{end}}

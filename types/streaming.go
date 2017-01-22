@@ -1,6 +1,7 @@
 package types
 
 import (
+	"github.com/julienschmidt/httprouter"
 	. "github.com/zballs/go_resonate/util"
 	"io"
 	"net"
@@ -43,20 +44,18 @@ type HttpService struct {
 	dir    string
 	files  http.FileSystem
 	logger Logger
-	mux    *http.ServeMux
+	router *httprouter.Router
 }
 
-func NewHttpService(dir string, mux *http.ServeMux) *HttpService {
+func NewHttpService(dir string) *HttpService {
 	files := http.Dir(dir)
 	logger := NewLogger("streaming_server")
-	if mux == nil {
-		mux = http.NewServeMux()
-	}
+	router := httprouter.New()
 	hs := &HttpService{
 		dir:    dir,
 		files:  files,
 		logger: logger,
-		mux:    mux,
+		router: router,
 	}
 	hs.SetPlayHandler()
 	return hs
@@ -68,69 +67,81 @@ func (serv *HttpService) Path(args ...string) string {
 }
 
 func (serv *HttpService) SetPlayHandler() {
-	serv.mux.HandleFunc("/play", func(w http.ResponseWriter, req *http.Request) {
-		// Should be GET request
-		if req.Method != http.MethodGet {
-			errMsg := Sprintf("Expected %s request; got %s request\n", http.MethodGet, req.Method)
-			serv.logger.Error(errMsg)
-			http.Error(w, errMsg, http.StatusBadRequest)
-			return
-		}
-		// Get values
-		values, err := UrlValues(req)
-		if err != nil {
-			serv.logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-		projectTitle := values.Get("project_title")
-		pub58 := values.Get("public_key")
-		sig58 := values.Get("signature")
-		songTitle := values.Get("song_title")
-		// Public key
-		pub := new(PublicKey)
-		if err = pub.FromB58(pub58); err != nil {
-			serv.logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		// Signature
-		sig := new(Signature)
-		if err = sig.FromB58(sig58); err != nil {
-			serv.logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusUnauthorized)
-			return
-		}
-		// Verify signature
-		if !pub.Verify([]byte(projectTitle+songTitle), sig) {
-			errMsg := "Signature verification failed"
-			serv.logger.Error(errMsg)
-			http.Error(w, errMsg, http.StatusUnauthorized)
-			return
-		}
-		// TODO: verify payment
-		// Send file bytes
-		path := filepath.Join(projectTitle, songTitle, ".mp3")
-		file, err := serv.files.Open(path)
-		if err != nil {
-			serv.logger.Error(err.Error())
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		fw := FlushWriter(w)
-		bytes := ReadAll(file)
-		fw.Write(bytes)
-	})
+	serv.router.GET("/play/:project_title/:song_title/*",
+		func(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
+			// Get values
+			projectTitle := params.ByName("project_title")
+			songTitle := params.ByName("song_title")
+			pub58 := params.ByName("public_key")
+			if pub58 == "" {
+				errMsg := "Could not find public key"
+				serv.logger.Error(errMsg)
+				http.Error(w, errMsg, http.StatusBadRequest)
+				return
+			}
+			sig58 := params.ByName("signature")
+			if sig58 == "" {
+				errMsg := "Could not find signature"
+				serv.logger.Error(errMsg)
+				http.Error(w, errMsg, http.StatusBadRequest)
+				return
+			}
+			// Public key
+			pub := new(PublicKey)
+			if err := pub.FromB58(pub58); err != nil {
+				serv.logger.Error(err.Error())
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
+			}
+			// Signature
+			sig := new(Signature)
+			if err := sig.FromB58(sig58); err != nil {
+				serv.logger.Error(err.Error())
+				http.Error(w, err.Error(), http.StatusUnauthorized)
+				return
+			}
+			// Verify signature
+			if !pub.Verify([]byte(projectTitle+songTitle), sig) {
+				errMsg := "Signature verification failed"
+				serv.logger.Error(errMsg)
+				http.Error(w, errMsg, http.StatusUnauthorized)
+				return
+			}
+			// TODO: verify payment
+			// Send file bytes
+			path := filepath.Join(projectTitle, songTitle, ".mp3")
+			file, err := serv.files.Open(path)
+			if err != nil {
+				serv.logger.Error(err.Error())
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			fw := FlushWriter(w)
+			bytes := ReadAll(file)
+			fw.Write(bytes)
+		})
 }
 
 // Socket
 
+const LOCALHOST = "localhost"
+const PORT = ":8889"
+
 type PlayRequest struct {
 	// Payment
 	ProjectTitle string     `json:"project_title"`
+	SongTitle    string     `json:"song_title"`
 	PublicKey    *PublicKey `json:"public_key"`
 	Signature    *Signature `json:"signature"`
-	SongTitle    string     `json:"song_title"`
+}
+
+func NewPlayRequest(projectTitle, songTitle string, pub *PublicKey, sig *Signature) *PlayRequest {
+	return &PlayRequest{
+		ProjectTitle: projectTitle,
+		SongTitle:    songTitle,
+		PublicKey:    pub,
+		Signature:    sig,
+	}
 }
 
 type PlayResponse struct {
@@ -148,7 +159,10 @@ type SocketService struct {
 
 func NewSocketService(addr, dir string) (*SocketService, error) {
 	files := http.Dir(dir)
-	lis, err := net.Listen("tcp", addr)
+	if addr == "" {
+		addr = LOCALHOST
+	}
+	lis, err := net.Listen("tcp", addr+":"+PORT)
 	if err != nil {
 		return nil, err
 	}
@@ -164,6 +178,13 @@ func NewSocketService(addr, dir string) (*SocketService, error) {
 func (serv *SocketService) Path(args ...string) string {
 	args = append([]string{serv.dir}, args...)
 	return filepath.Join(args...)
+}
+
+func (serv *SocketService) PlayAddr() string {
+	ipAddr, err := GetMyIP()
+	Check(err)
+	playAddr := ipAddr + ":" + PORT
+	return playAddr
 }
 
 func (serv *SocketService) Shutdown() error {

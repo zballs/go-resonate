@@ -53,7 +53,7 @@ func RenderTemplate(w http.ResponseWriter, t string, pg *Page) {
 
 // Handler
 
-type Handler func(wr http.ResponseWriter, req *http.Request)
+type Handler func(w http.ResponseWriter, req *http.Request)
 
 func TemplateHandler(filename string) Handler {
 	return func(w http.ResponseWriter, req *http.Request) {

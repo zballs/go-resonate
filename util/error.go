@@ -16,4 +16,4 @@ func Errorf(format string, args ...interface{}) error {
 	return errors.Errorf(format, args...)
 }
 
-// TODO: add different types of panics
+// TODO: add panics
