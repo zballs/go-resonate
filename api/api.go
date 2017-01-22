@@ -1,19 +1,20 @@
 package api
 
 import (
-	"fmt"
-	// "github.com/gorilla/websocket"
 	"github.com/zballs/go_resonate/bigchain"
 	"github.com/zballs/go_resonate/coala"
 	"github.com/zballs/go_resonate/types"
 	. "github.com/zballs/go_resonate/util"
 	"net/http"
+	"os"
+	"strings"
 )
 
 type Api struct {
 	logger types.Logger
 	priv   *PrivateKey
 	pub    *PublicKey
+	serv   *types.HttpService
 	user   *types.User
 	userId string
 }
@@ -24,23 +25,23 @@ func NewApi() *Api {
 	}
 }
 
-func (api *Api) AddRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/login", api.Login)
+func (api *Api) Configure(dir string, mux *http.ServeMux) {
 	mux.HandleFunc("/new_project", api.NewProject)
-	mux.HandleFunc("/register_user", api.RegisterUser)
+	mux.HandleFunc("/user_login", api.UserLogin)
+	mux.HandleFunc("/user_register", api.UserRegister)
+	api.serv = types.NewHttpService(dir, mux)
 }
 
 func Respond(w http.ResponseWriter, response interface{}) {
 	json := MarshalJSON(response)
 	w.Header().Set("Content-Type", "application/json")
-	_, err := w.Write(json)
-	Check(err)
+	w.Write(json)
 }
 
-func (api *Api) RegisterUser(w http.ResponseWriter, req *http.Request) {
+func (api *Api) UserRegister(w http.ResponseWriter, req *http.Request) {
 	// Should be POST request
 	if req.Method != http.MethodPost {
-		http.Error(w, fmt.Sprintf("Expected POST request; got %s request", req.Method), http.StatusBadRequest)
+		http.Error(w, Sprintf("Expected POST request; got %s request", req.Method), http.StatusBadRequest)
 		return
 	}
 	// Get request data
@@ -64,7 +65,7 @@ func (api *Api) RegisterUser(w http.ResponseWriter, req *http.Request) {
 	// send request to IPDB
 	t := bigchain.GenerateTransaction(data, pub)
 	t.Fulfill(priv, pub)
-	fmt.Println(string(MarshalJSON(t)))
+	Println(string(MarshalJSON(t)))
 	id, err := bigchain.PostTransaction(t)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -74,10 +75,10 @@ func (api *Api) RegisterUser(w http.ResponseWriter, req *http.Request) {
 	Respond(w, userInfo)
 }
 
-func (api *Api) Login(w http.ResponseWriter, req *http.Request) {
+func (api *Api) UserLogin(w http.ResponseWriter, req *http.Request) {
 	// Should be POST request
 	if req.Method != http.MethodPost {
-		http.Error(w, fmt.Sprintf("Expected POST request; got %s request", req.Method), http.StatusBadRequest)
+		http.Error(w, Sprintf("Expected POST request; got %s request", req.Method), http.StatusBadRequest)
 		return
 	}
 	// Get request data
@@ -131,7 +132,7 @@ func (api *Api) Login(w http.ResponseWriter, req *http.Request) {
 func (api *Api) NewProject(w http.ResponseWriter, req *http.Request) {
 	// Should be POST request
 	if req.Method != http.MethodPost {
-		http.Error(w, fmt.Sprintf("Expected POST request; got %s request", req.Method), http.StatusBadRequest)
+		http.Error(w, Sprintf("Expected POST request; got %s request", req.Method), http.StatusBadRequest)
 		return
 	}
 	// Make sure we're logged in
@@ -157,10 +158,10 @@ func (api *Api) NewProject(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, "Failed to read request data", http.StatusBadRequest)
 		return
 	}
-	// Name of the project
-	name := form.Value["name"][0]
+	// Project title
+	projectTitle := form.Value["project_title"][0]
 	// Create new work
-	data := coala.NewWork("", name, api.user.Name)
+	data := coala.NewWork(projectTitle, api.user.Name)
 	// Generate and send transaction to IPDB
 	t := bigchain.GenerateTransaction(data, api.pub)
 	t.Fulfill(api.priv, api.pub)
@@ -169,21 +170,34 @@ func (api *Api) NewProject(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	// Just one song for now
-	// .. Eventually iterate through list of songs
-	name = form.Value["names"][0]
-	place := form.Value["place"][0]
-	// Should we have example, as specified in coalaip??
-	// .. What should url be?
-	data = coala.NewDigitalManifestation("", name, "", true, projectId, DateString(), place, req.RemoteAddr)
-	// Generate and send transaction to IPDB
-	t = bigchain.GenerateTransaction(data, api.pub)
-	songId, err := bigchain.PostTransaction(t)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+	projectPlace := form.Value["project_place"][0]
+	songs := form.File["songs"]
+	songIds := make([]string, len(songs))
+	for i, song := range songs {
+		songTitle := strings.SplitN(song.Filename, ".", 2)[0]
+		// What should example and url be?
+		data = coala.NewDigitalManifestation(songTitle, "", true, projectId, DateString(), projectPlace, req.RemoteAddr)
+		// Generate and send transaction to IPDB
+		t = bigchain.GenerateTransaction(data, api.pub)
+		songIds[i], err = bigchain.PostTransaction(t)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+		// Store file
+		path := api.serv.Path(projectTitle, song.Filename)
+		file, err := os.Create(path)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		_file, err := song.Open()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		Copy(file, _file)
 	}
-	// TODO: save project_id and song_ids to disk
-	projectInfo := NewProjectInfo(projectId, []string{songId})
+	projectInfo := NewProjectInfo(projectId, songIds)
 	Respond(w, projectInfo)
 }
