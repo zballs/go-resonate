@@ -1,0 +1,82 @@
+{{define "head"}}
+  <title>{{ .Title}}</title>
+{{end}}
+
+{{define "body"}}
+<div id="user-login">
+ <form id="user-login-form">
+    <h2>Login</h2>
+    <input type="password" name="private_key" placeholder="private key" required /><br>
+    <input type="text" name="user_id" placeholder="user id" required /><br>
+    <select form="user-login-form" name="type">
+        <option value="artist">artist</option>
+        <option value="listener">listener</option>
+    </select><br>
+    <input type="text" name="email" placeholder="email" required /><br>
+    <input type="text" name="username" placeholder="username" required /><br>
+    <input type="password" name="password" placeholder="password" required /><br>
+    <input type="submit" value="login" />
+  </form>
+</div>
+<div id="user-register">
+  <form id="user-register-form">
+      <h2>Register User</h2>
+      <select form="user-register-form" name="type">
+        <option value="artist">artist</option>
+        <option value="listener">listener</option>
+      </select><br>
+      <input type="text" name="email" placeholder="email" required /><br>
+      <input type="text" name="username" placeholder="username" required /><br>
+      <input type="password" name="password" placeholder="password" required /><br>
+      <input type="submit" value="register"/>
+  </form>
+</div>
+<script type="text/javascript">
+
+function httpPostAsync(addr, data, callback) {
+    var xhr = new XMLHttpRequest ();
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState == 4) {
+        if (xhr.status == 200) {
+          callback(xhr.responseText);
+        } else {
+          alert(xhr.responseText);
+        };
+      };
+    };
+    xhr.open("POST", addr, true); 
+    xhr.send(data);
+};
+
+// Callbacks
+var userLoginCallback = function(responseText) {
+  var json = JSON.parse(responseText);
+  console.log(json); //for now
+};
+
+var userRegisterCallback = function(responseText) {
+  var json = JSON.parse(responseText);
+  console.log(json); //for now
+};
+
+window.onload = function(){
+    // User login
+    var userLoginForm = document.getElementById("user-login-form");
+    userLoginForm.onsubmit = function(event) {
+      event.preventDefault();
+      var formData = $("#user-login-form").serialize();
+      httpPostAsync("http://localhost:8888/user_login", formData, userLoginCallback);
+    };
+    // User register 
+    var registerUserForm = document.getElementById("user-register-form");
+    registerUserForm.onsubmit = function(event) {
+      event.preventDefault();
+      var formData = $("#user-register-form").serialize();    
+      httpPostAsync("http://localhost:8888/user_register", formData, userRegisterCallback); 
+    };
+}
+</script>
+{{end}}
+
+
+

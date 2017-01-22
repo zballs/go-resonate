@@ -1,9 +1,18 @@
 package types
 
-import log "github.com/inconshreveable/log15"
+import (
+	log "github.com/inconshreveable/log15"
+	. "github.com/zballs/go_resonate/util"
+)
 
-type Logger log.Logger
+type Logger struct {
+	log.Logger
+}
 
 func NewLogger(module string) Logger {
-	return log.New("module", module)
+	return Logger{log.New("module", module)}
+}
+
+func (l Logger) Errorf(format string, args ...interface{}) {
+	l.Error(Sprintf(format, args...))
 }

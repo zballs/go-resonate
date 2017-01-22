@@ -135,6 +135,10 @@ func (t *Transaction) SetData(data map[string]interface{}) {
 	t.Tx.Asset.Data = data
 }
 
+func (t *Transaction) GetValue(key string) interface{} {
+	return t.Tx.Asset.Data[key]
+}
+
 func (t *Transaction) SetValue(key string, value interface{}) {
 	t.Tx.Asset.Data[key] = value
 }

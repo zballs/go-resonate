@@ -46,6 +46,11 @@ func UnmarshalJSON(data []byte, v interface{}) {
 }
 
 func ReadJSON(r io.Reader, v interface{}) error {
-	enc := json.NewDecoder(r)
-	return enc.Decode(v)
+	dec := json.NewDecoder(r)
+	return dec.Decode(v)
+}
+
+func WriteJSON(w io.Writer, v interface{}) error {
+	enc := json.NewEncoder(w)
+	return enc.Encode(v)
 }

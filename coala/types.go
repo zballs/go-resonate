@@ -10,10 +10,95 @@ const (
 
 // json-ld types for the coalaip rrm
 // specs: github.com/COALAIP/specs/data-structure/README.md
+// Note: @id should be set after model is created
+// TODO: ipld implementation
+
+// Geo coordinates
+
+func NewGeo(lat, long string) map[string]interface{} {
+	json := MarshalJSON(struct {
+		Context   string `json:"@context"`
+		Type      string `json:"@type"`
+		Latitude  string `json:"latitude"`
+		Longitude string `json:"longitude"`
+	}{
+		Context:   SCHEMA,
+		Type:      "GeoCoordinates",
+		Latitude:  lat,
+		Longitude: long,
+	})
+	data, err := CompactJSON(json)
+	Check(err)
+	return data
+}
+
+// Localizable place
+
+func NewPlace(lat, long, name string) map[string]interface{} {
+	json := MarshalJSON(struct {
+		Context string                 `json:"@context"`
+		Type    string                 `json:"@type"`
+		Geo     map[string]interface{} `json:"geo"`
+		Name    string                 `json:"name"`
+	}{
+		Context: SCHEMA,
+		Type:    "Place",
+		Geo:     NewGeo(lat, long),
+		Name:    name,
+	})
+	data, err := CompactJSON(json)
+	Check(err)
+	return data
+}
+
+// Person
+
+func NewPerson(givenName, familyName, birthDate string) map[string]interface{} {
+	json := MarshalJSON(struct {
+		Context    string `json: "@context"`
+		Type       string `json:"@type"`
+		Id         string `json:"@id"`
+		GivenName  string `json:"givenName"`
+		FamilyName string `json:"familyName"`
+		BirthDate  string `json:"birthDate"`
+	}{
+		Context:    SCHEMA,
+		Type:       "Person",
+		Id:         "",
+		GivenName:  givenName,
+		FamilyName: familyName,
+		BirthDate:  birthDate,
+	})
+	data, err := CompactJSON(json)
+	Check(err)
+	return data
+}
+
+// Organization
+
+func NewOrganization(name string, founder string, members []string) map[string]interface{} {
+	json := MarshalJSON(struct {
+		Context string   `json:"@context"`
+		Type    string   `json:"@type"`
+		Id      string   `json:"@id"`
+		Name    string   `json:"name"`
+		Founder string   `json:"founder"`
+		Member  []string `json:"member"`
+	}{
+		Context: SCHEMA,
+		Type:    "Organization",
+		Name:    name,
+		Founder: founder,
+		Member:  members,
+	})
+	data, err := CompactJSON(json)
+	Check(err)
+	return data
+}
 
 // Work (e.g. composition)
 
-func NewWork(id, name, author string) map[string]interface{} {
+func NewWork(name, author string) map[string]interface{} {
 	json := MarshalJSON(struct {
 		Context string `json:"@context"`
 		Type    string `json:"@type"`
@@ -23,7 +108,6 @@ func NewWork(id, name, author string) map[string]interface{} {
 	}{
 		Context: COALAIP,
 		Type:    "Work",
-		Id:      id,
 		Name:    name,
 		Author:  author,
 	})
@@ -34,7 +118,7 @@ func NewWork(id, name, author string) map[string]interface{} {
 
 // Digital manifestation (e.g. audio file)
 
-func NewDigitalManifestation(id string, name string, example string, isManifestation bool, project string, datePublished string, locationCreated, url string) map[string]interface{} {
+func NewDigitalManifestation(name string, example string, isManifestation bool, project string, datePublished string, locationCreated, url string) map[string]interface{} {
 	json := MarshalJSON(struct {
 		Context         string `json:"@context"`
 		Type            string `json:"@type"`
@@ -49,7 +133,6 @@ func NewDigitalManifestation(id string, name string, example string, isManifesta
 	}{
 		Context:         COALAIP,
 		Type:            "Manifestation",
-		Id:              id,
 		Name:            name,
 		ExampleOfWork:   example,
 		IsManifestation: isManifestation,
@@ -65,7 +148,7 @@ func NewDigitalManifestation(id string, name string, example string, isManifesta
 
 // Digital Fingerprint
 
-func NewDigitalFingerprint(id, creativeWork string, fingerprint string) map[string]interface{} {
+func NewDigitalFingerprint(creativeWork string, fingerprint string) map[string]interface{} {
 	json := MarshalJSON(struct {
 		Context       string `json:"@context"`
 		Type          string `json:"@type"`
@@ -75,7 +158,6 @@ func NewDigitalFingerprint(id, creativeWork string, fingerprint string) map[stri
 	}{
 		Context:       COALAIP,
 		Type:          "DigitalFingerprint",
-		Id:            id,
 		FingerprintOf: creativeWork,
 		Fingerprint:   fingerprint,
 	})
@@ -86,7 +168,7 @@ func NewDigitalFingerprint(id, creativeWork string, fingerprint string) map[stri
 
 // Right
 
-func NewRight(id string, usages []string, territory string, rightContext []string, exclusive bool, numberOfUses, percentageShares int, validFrom, validTo string, creativeWork, license string) map[string]interface{} {
+func NewRight(usages []string, territory string, rightContext []string, exclusive bool, numberOfUses, percentageShares int, validFrom, validTo string, creativeWork, license string) map[string]interface{} {
 	json := MarshalJSON(struct {
 		Context          string   `json:"@context"`
 		Type             string   `json:"@type"`
@@ -104,7 +186,6 @@ func NewRight(id string, usages []string, territory string, rightContext []strin
 	}{
 		Context:          COALAIP,
 		Type:             "Right",
-		Id:               id,
 		Usages:           usages,
 		Territory:        territory,
 		RightContext:     rightContext,
@@ -132,7 +213,6 @@ func NewRightsAssignment(id, creativeWork string) map[string]interface{} {
 	}{
 		Context:          COALAIP,
 		Type:             "RightsTransferAction",
-		Id:               id,
 		TransferContract: creativeWork,
 	})
 	data, err := CompactJSON(json)
@@ -156,7 +236,6 @@ func NewRightsAssertion(id, asserter string, assertionTruth bool, assertionSubje
 	}{
 		Context:          SCHEMA,
 		Type:             "ReviewAction",
-		Id:               id,
 		Asserter:         asserter,
 		AssertionTruth:   assertionTruth,
 		AssertionSubject: assertionSubject,
@@ -168,87 +247,3 @@ func NewRightsAssertion(id, asserter string, assertionTruth bool, assertionSubje
 	Check(err)
 	return data
 }
-
-/*
-// Geo coordinates
-
-func GeoData(lat, long string) []byte {
-	data, _ := json.Marshal(struct {
-		Context   string `json:"@context"`
-		Type      string `json:"@type"`
-		Latitude  string `json:"latitude"`
-		Longitude string `json:"longitude"`
-	}{
-		Context:   SCHEMA,
-		Type:      "GeoCoordinates",
-		Latitude:  lat,
-		Longitude: long,
-	})
-	return data
-}
-
-func GeoMap(lat, long string) map[string]interface{} {
-	data := GeoData(lat, long)
-	mp, _ := MapJSON(data)
-	return mp
-}
-
-// Localizable place
-
-func PlaceData(lat, long, name string) []byte {
-	data, _ := json.Marshal(struct {
-		Context string                 `json:"@context"`
-		Type    string                 `json:"@type"`
-		Geo     map[string]interface{} `json:"geo"`
-		Name    string                 `json:"name"`
-	}{
-		Context: SCHEMA,
-		Type:    "Place",
-		Geo:     GeoMap(lat, long),
-		Name:    name,
-	})
-	return data
-}
-
-// Person
-
-func PersonData(id, givenName, familyName, birthDate, deathDate string) []byte {
-	data, _ := json.Marshal(struct {
-		Context   string `json: "@context"`
-		Type      string `json:"@type"`
-		Id        string `json:"@id"`
-		Email     string `json:"email"`
-		BirthDate string `json:"birthDate"`
-	}{
-		Context:    SCHEMA,
-		Type:       "Person",
-		Id:         id,
-		GivenName:  givenName,
-		FamilyName: familyName,
-		BirthDate:  birthDate,
-		DeathDate:  deathDate,
-	})
-	return data
-}
-
-// Organization
-
-func OrganizationData(id, name string, founder string, members []string) []byte {
-	data, _ := json.Marshal(struct {
-		Context string   `json:"@context"`
-		Type    string   `json:"@type"`
-		Id      string   `json:"@id"`
-		Name    string   `json:"name"`
-		Founder string   `json:"founder"`
-		Member  []string `json:"member"`
-	}{
-		Context: SCHEMA,
-		Type:    "Organization",
-		Id:      id,
-		Name:    name,
-		Founder: founder,
-		Member:  members,
-	})
-	return data
-}
-*/

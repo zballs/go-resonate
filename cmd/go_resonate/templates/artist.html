@@ -1,0 +1,47 @@
+{{define "head"}}
+  <title>{{ .Title}}</title>
+{{end}}
+
+{{define "body"}}
+<div id="new-project">
+    <form id="new-project-form" enctype="multipart/form-data">
+        <h2>New Project</h2>
+        <input type="text" name="project_title" placeholder="project title" required /><br>
+        <input type="text" name="project_place" placeholder="project place" required /><br>
+        <input accept="audio" type="file" name="songs" multiple required /><br>
+        <input type="submit" value="create" />
+    </form>
+</div>
+<script type="text/javascript">
+
+function httpPostAsync(addr, data, callback) {
+    var xhr = new XMLHttpRequest ();
+    xhr.onreadystatechange = function() {
+      if (xhr.readyState == 4) {
+        if (xhr.status == 200) {
+          callback(xhr.responseText);
+        } else {
+          alert(xhr.responseText);
+        };
+      };
+    };
+    xhr.open("POST", addr, true); 
+    xhr.send(data);
+};
+
+var newProjectCallback = function(responseText) {
+  var json = JSON.parse(responseText);
+  console.log(json); //for now
+};
+
+window.onload = function() {
+    // New project
+    var newProjectForm = document.getElementById("new-project-form");
+    newProjectForm.onsubmit = function(event) {
+      event.preventDefault();
+      var formData = new FormData(event.target);
+      httpPostAsync("http://localhost:8888/new_project", formData, newProjectCallback);
+    };
+}
+</script>
+{{end}}

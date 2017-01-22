@@ -7,18 +7,20 @@ import (
 )
 
 func main() {
-	RegisterTemplates("home.html")
-	CreatePages("home")
+
+	CreatePages("artist", "listener", "login")
+	RegisterTemplates("artist.html", "login.html")
 
 	// Create request multiplexer
 	mux := http.NewServeMux()
-	mux.HandleFunc("/home", TemplateHandler("home.html"))
+	mux.HandleFunc("/artist", TemplateHandler("artist.html"))
+	mux.HandleFunc("/login", TemplateHandler("login.html"))
 
 	// Create api
 	api := api.NewApi()
 
-	// Add routes to multiplexer
-	api.AddRoutes(mux)
+	// Add routes to multiplexer and create streaming service
+	api.Configure(mux)
 
 	// Start HTTP server with multiplexer
 	http.ListenAndServe(":8888", mux)
